@@ -1,7 +1,6 @@
-Result Analysis
-===============
 
-This repository contains helpers for aggregating and plotting metrics collected from SWE-bench Verified runs. The most common workflow is to regenerate the summary tables and figures after adding new JSONL logs.
+
+This repository contains helpers for aggregating and plotting metrics collected from SWE-bench Verified runs, and provides a full replication package including the source code, logs, and measurements for each phase. The most common workflow is to regenerate the summary tables and figures after adding new JSONL logs.
 
 ## Prerequisites
 
@@ -22,31 +21,3 @@ Each script is intended to be run from the repository root via `python3 <script>
 
 > **Tip:** The scripts assume the relevant scaffold installations (OpenHands, SWE-Agent, AutoCodeRover) are already configured on the machine and that any paths or API keys referenced inside the scripts exist. Adjust the constants near the top of each script if your environment differs.
 
-## Running the analysis
-
-Use `scripts/analyze_results.py` to rebuild the CSV outputs and plots. Pass every directory (or individual JSONL file) you want to include:
-
-```bash
-python3 scripts/analyze_results.py \
-  --inputs acr_gemma big_swe_agent_gemma big_swe_agent_qwen \
-           mini_swe_agent_gemma openhands_gemma openhands_qwen \
-  --energy-scale 1e-6 \
-  --idle-cpu-w 51.69 --idle-gpu-w 2.70 \
-  --plots-dir plots/all_scaffolds \
-  --csv run_summary_all.csv \
-  --per-issue per_issue.csv \
-  --table-csv tables_all.csv
-```
-
-- `--energy-scale 1e-6` converts microjoule readings stored in the logs to joules. Adjust the value (`1.0` is the default) if your data already uses joules.
-- `--idle-cpu-w` and `--idle-gpu-w` (optional) subtract a fixed idle baseline (Watts) per trial duration to compute idle-adjusted energies. When provided, the per-issue CSV includes `*_adj_j` columns and summaries include `Energy Usage Adj (J)`.
-- `--plots-dir` controls where figures (including `scatter_tasks_vs_energy.png`) are saved.
-- `--csv`, `--per-issue`, and `--table-csv` export run-level, issue-level, and scaffold aggregate tables respectively.
-
-The script prints a per-run summary and a scaffold summary to the terminal while writing the selected artifacts to disk.
-
-## Troubleshooting
-
-- **Missing matplotlib:** Install it with `pip install matplotlib`.
-- **No JSONL files found:** Confirm the directories passed to `--inputs` exist and contain `*.jsonl` files.
-- **Label overlap in scatter plots:** The helper automatically spaces labels, but extreme clustering can still occur. Slightly increasing figure size (for example `--plots-dir plots && edit scripts/analyze_results.py` to adjust `figsize`) can help.
