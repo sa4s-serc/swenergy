@@ -1,0 +1,43 @@
+The `openhands_gemma` scaffold, across the analyzed runs, exhibits several recurring behavioral patterns and outcomes, predominantly leading to task failures. While initial problem comprehension is often sound, execution frequently falters due to issues with environmental interaction, tool usage, and adherence to instructions.
+
+### Key Behaviors and Outcomes Observed:
+
+1.  **Pervasive File System Navigation and Pathing Errors:**
+    *   **Incorrect Paths:** Agents consistently struggle with file paths, often using incorrect repository roots (e.g., `django__django-9296` using `/workspace/django__django` instead of `/workspace/django__django__3.1`), assuming specific subdirectories without verification (e.g., `django__django-11999`, `sphinx-doc__sphinx-8638`), or losing context of the correct path after initial discovery (e.g., `django__django-12308` ignoring `find` output).
+    *   **Lack of Initial Exploration:** Agents frequently attempt to `grep`, `read`, or `edit` files at assumed paths without first performing a comprehensive `ls -R` or `find` from the repository root to understand the actual directory structure. This violates explicit `FILE_SYSTEM_GUIDELINES` in some prompts (e.g., `django__django-12273`, `sphinx-doc__sphinx-7985`, `sphinx-doc__sphinx-8548`).
+    *   **Ignoring `ls`/`find` Output:** Even when `ls` or `find` commands are executed successfully, the agent often fails to correctly process or integrate the output to update its internal model of the file system, leading to continued attempts on incorrect paths (e.g., `sphinx-doc__sphinx-8035`).
+
+2.  **Misinterpretation of Tool Outputs and Feedback:**
+    *   **Misleading `str_replace_editor` Success Messages:** The `str_replace_editor` tool frequently reports "I edited the file..." even when the `old_str` was not found, `old_str` and `new_str` were identical, or the file path was incorrect. This consistently confuses the agent, leading it to believe an action was successful when it wasn't (e.g., `django__django-11790`, `django__django-11964`, `django__django-12193`, `sphinx-doc__sphinx-10323`, `sphinx-doc__sphinx-9320`).
+    *   **Incorrect `grep` Interpretation:** Agents often misinterpret `grep` returning exit code 1 (string not found) as confirmation of a bug, or as a failure of the `str_replace` tool, rather than an indication that the target string for modification is absent (e.g., `django__django-11848`, `django__django-11951`, `sphinx-doc__sphinx-8475`).
+    *   **Ignoring `ls` Errors:** Agents frequently ignore `ls` commands returning exit code 2 ("No such file or directory") and proceed with actions that assume the directory/file exists (e.g., `django__django-11964`, `sphinx-doc__sphinx-8548`).
+
+3.  **Repetitive and Unproductive Loops:**
+    *   **Repeating Failed Commands:** A very common pattern is the agent repeatedly executing the exact same command (e.g., `grep`, `str_replace`, `ls`) after it has already failed or yielded no new information, without altering its strategy (e.g., `django__django-11815`, `django__django-11880`, `django__django-12325`, `sphinx-doc__sphinx-8265`, `sphinx-doc__sphinx-9320`).
+    *   **Stuck in `str_replace` Loop:** Many runs end in `AgentStuckInLoopError` due to repeated `str_replace` attempts, often exacerbated by misleading tool feedback (e.g., `django__django-11815`, `django__django-12325`, `sphinx-doc__sphinx-8056`, `sphinx-doc__sphinx-8269`).
+
+4.  **Failure to Follow Multi-Phase Instructions and Premature Termination:**
+    *   **Skipping Verification/Testing:** Almost universally, agents fail to perform explicit testing and verification phases (e.g., running existing tests, creating reproduction scripts, verifying the fix) as outlined in the prompt's detailed workflow. They often declare completion after a single edit or even just exploration (e.g., `django__django-11790`, `django__django-12155`, `django__django-12708`, `sphinx-doc__sphinx-10435`, `sphinx-doc__sphinx-7757`).
+    *   **Premature Termination:** Agents frequently terminate the task before implementing a fix, or even before fully exploring the codebase, often citing an inability to locate files or a perceived tool failure (e.g., `django__django-11885`, `django__django-12155`, `django__django-12273`, `sphinx-doc__sphinx-8265`, `sphinx-doc__sphinx-9461`).
+    *   **Failure to Recognize Completion:** Agents declare "All done!" while their own `final_thought` indicates further work is needed, or when no actual fix or verification has occurred (e.g., `django__django-11951`, `django__django-12209`, `django__django-12774`, `sphinx-doc__sphinx-10466`, `sphinx-doc__sphinx-9229`).
+
+5.  **Reasoning-Action Mismatch:**
+    *   Agents often articulate a correct understanding of the problem or a logical next step in their `think` messages, but then execute an action that contradicts this reasoning or is fundamentally flawed (e.g., `django__django-11790`'s plan to change `max_length` to `maxlength` vs. attempting to replace `maxlength` with `maxlength_attr` to satisfy tool constraints; `django__django-11885` diagnosing `is_input: true` misuse but repeating it; `django__django-12308` finding a file with `find` but then attempting to edit the old, incorrect path).
+
+### Notable Outliers:
+
+1.  **Hallucinating Tool Usage/Success:**
+    *   `sphinx-doc__sphinx-9229`: Attempts to use a non-existent `read` tool and then claims success in reading the file.
+    *   `django__django-11885`: Repeatedly misuses `is_input: true` with `git show` even after correctly diagnosing the error, indicating a failure to translate understanding into correct action.
+
+2.  **Hallucinating Task Completion/Verification:**
+    *   `django__django-12774`, `sphinx-doc__sphinx-10435`, `sphinx-doc__sphinx-10466`: Agents claim to have run tests and updated documentation, but the logs show no evidence of these actions.
+    *   `sphinx-doc__sphinx-8551`: Claims to have fixed the issue and tested it, but merely recreated the bug-reproducing content from the issue description.
+
+3.  **Destructive or Irrelevant Edits:**
+    *   `sphinx-doc__sphinx-10323`: Replaces a critical directive registration line with an empty string, which would break Sphinx functionality.
+    *   `django__django-12304`: Deletes a class definition from a test file, directly violating explicit instructions and not addressing the problem.
+    *   `django__django-12209`: Creates a new `models.py` file with example code from the issue description, instead of modifying existing framework code to fix the problem.
+
+4.  **Correctly Identifying Environmental Blocker:**
+    *   `sphinx-doc__sphinx-10673`: The agent correctly identifies that a critical file (`conf.py`) is missing from the provided repository, making the task impossible, and terminates with a reasonable explanation. This stands out as a *good* diagnostic failure, indicating the agent can correctly assess environmental limitations.
