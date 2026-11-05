@@ -102,7 +102,6 @@ python scripts/analyze_results.py \
     --inputs acr_gemma acr_qwen swe_agent_gemma swe_agent_qwen \
              mini_swe_agent_gemma mini_swe_agent_qwen openhands_gemma openhands_qwen \
     --energy-scale 1e-6 \
-    --idle-cpu-w <CPU_IDLE_W> --idle-gpu-w <GPU_IDLE_W> \
     --sb-reports sb-cli-reports \
     --csv run_summary_all.csv \
     --per-issue per_issue.csv \
@@ -110,7 +109,7 @@ python scripts/analyze_results.py \
     --plots-dir plots/all_scaffolds
 ```
 
-Energies in the JSONL logs are stored in microjoules, hence `--energy-scale 1e-6`. The idle baselines (`--idle-cpu-w`, `--idle-gpu-w`) are the measured idle power of the machine and are subtracted from each issue's energy in proportion to its duration.
+Energies in the JSONL logs are stored in microjoules, hence `--energy-scale 1e-6`.
 
 Further analyses:
 
